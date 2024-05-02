@@ -18,9 +18,9 @@ export const client = axios.create({
 })
 
 client.interceptors.response.use(res => {
-  console.log(res.request._header)
-  console.log(res.headers)
-  console.log(res.status)
+  // console.log(res.request._header)
+  // console.log(res.headers)
+  // console.log(res.status)
   return res
 }, err => {
   console.error(err)

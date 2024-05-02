@@ -6,35 +6,42 @@ import tmp from 'tmp'
 import extract from 'extract-zip'
 import archiver from 'archiver'
 import FormData from 'form-data'
+import { parse } from 'path'
+
+type FileOption = {
+  isDirectory?: boolean
+}
 
 export const sync = async (rootPath: string) => {
   await client({
     url: '/_w2cmsManager/ContentsManager/ContentsManager'
   })
   const archive = archiver('zip')
-  const formData = new FormData()
-  archive.directory(rootPath, false, {})
+  const files = [
+    'Contents/images',
+    'Css',
+    'Form',
+    'Js',
+    'Page',
+    'Default.aspx',
+    'DefaultBrandTop.aspx'
+  ]
   archive.glob('**/*', {
     cwd: rootPath,
-    ignore: ['Landing', 'SmartPhone/Landing']
+    ignore: ['**/TwPelicanAllCvs.xml'],
+    skip: ['Landing', 'SmartPhone/Landing', 'LandingPage', 'LP']
   })
-  formData.append('Input.UploadContents', archive, `theme.zip`)
+  const formData = new FormData()
   formData.append('Input.ZipDecompress', 'true')
   formData.append('Input.AutoResize', 'false')
-  formData.append('Input.ImageSizeWidthS', '')
-  formData.append('Input.ImageSizeWidthM', '')
-  formData.append('Input.ImageSizeWidthL', '')
-  formData.append('Input.ImageSizeWidthLL', '')
-  formData.append('Input.ImageSizeHeightS', '')
-  formData.append('Input.ImageSizeHeightM', '')
-  formData.append('Input.ImageSizeHeightL', '')
-  formData.append('Input.ImageSizeHeightLL', '')
+  formData.append('X-Requested-With', 'XMLHttpRequest')
+  formData.append('Input.UploadContents', archive, `theme.zip`)
 
   archive.finalize()
 
-  await client({
+  const res = await client({
     method: 'post',
-    url: `/_w2cmsManager/ContentsManager/Upload`,
+    url: `/_w2cmsManager/ContentsManager/Upload?Length=15`,
     data: formData
   })
 }
@@ -63,33 +70,37 @@ export const pull = async (rootPath: string) => {
   })
 }
 
-export const update = async (path: string, code: string) => {
-  // await client({
-  //   method: 'put',
-  //   url: `/admin/themes/${config.themeId}/file/${path.replace(/^\//, '')}`,
-  //   data: querystring.encode({
-  //     code: code,
-  //     prev_code: ''
-  //   })
-  // })
+export const update = async (path: string, data: Buffer) => {
+  const {dir, base} = parse(path)
+  await client({
+    url: '/_w2cmsManager/ContentsManager/ContentsManager'
+  })
+  await client({
+    method: 'post',
+    url: '/_w2cmsManager/ContentsManager/Click?Length=15',
+    data: querystring.encode({
+      openDirPathList: '：',
+      clickPath: `${dir.replace(/^\/|\/$/, '').replace('/', '\\')}\\`,
+      clickDir: 'False',
+      comeFromShortCut: 'false',
+      'X-Requested-With': 'XMLHttpRequest'
+    })
+  })
+  console.log(dir.replace(/^\//, '').replace('/', '\\'))
+  const formData = new FormData()
+  formData.append('Input.ZipDecompress', 'false')
+  formData.append('Input.AutoResize', 'false')
+  formData.append('X-Requested-With', 'XMLHttpRequest')
+  formData.append('Input.UploadContents', data, base)
+
+  const res = await client({
+    method: 'post',
+    url: `/_w2cmsManager/ContentsManager/Upload?Length=15`,
+    data: formData
+  })
 }
 
-export const updateBinaryies = async (rootPath: string, paths: string[]) => {
-  // const archive = archiver('zip')
-  // const formData = new FormData()
-  // paths.forEach(path => archive.file(path, {name: relative(rootPath, path)}))
-
-  // formData.append('file', archive, `${config.themeId}.zip`)
-  // archive.finalize()
-
-  // await client({
-  //   method: 'post',
-  //   url: `/admin/themes/${config.themeId}/theme_zip_upload`,
-  //   data: formData
-  // })
-}
-
-export const del = async (path: string) => {
+export const rm = async (path: string) => {
   await client({
     url: '/_w2cmsManager/ContentsManager/ContentsManager'
   })
@@ -107,7 +118,50 @@ export const del = async (path: string) => {
   await client({
     method: 'post',
     url: '/_w2cmsManager/ContentsManager/Delete',
-  }).then(res => res.data)
+  }).then(res => console.log(res.data))
+}
+
+export const mkdir = async (path: string) => {
+  await client({
+    url: '/_w2cmsManager/ContentsManager/ContentsManager'
+  })
+  const [parent, newDir] = path.split(/\/[^\/]*$/)
+  await client({
+    method: 'post',
+    url: '/_w2cmsManager/ContentsManager/Click?Length=15',
+    data: querystring.encode({
+      openDirPathList: '：',
+      clickPath: newDir ? `${parent.replace('/', '\\')}\\` : '',
+      clickDir: 'False',
+      comeFromShortCut: 'false',
+      'X-Requested-With': 'XMLHttpRequest'
+    })
+  })
+
+  await client({
+    method: 'post',
+    url: '/_w2cmsManager/ContentsManager/MakeDirectory',
+  }).then(res => console.log(res.data))
+
+  await client({
+    method: 'post',
+    url: '/_w2cmsManager/ContentsManager/Click?Length=15',
+    data: querystring.encode({
+      openDirPathList: '：',
+      clickPath: (newDir ? `${parent.replace('/', '\\')}\\` : '') + '_NewDirectory\\',
+      clickDir: 'False',
+      comeFromShortCut: 'false',
+      'X-Requested-With': 'XMLHttpRequest'
+    })
+  })
+
+  await client({
+    method: 'post',
+    url: '/_w2cmsManager/ContentsManager/Rename?Length=15',
+    data: querystring.encode({
+      rename: newDir ?? parent
+    })
+  }).then(res => console.log(res.data))
 }
 
 export const getPreviewUrl = async () => {

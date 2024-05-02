@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 import { Command } from '@commander-js/extra-typings'
-import { pull, sync, update, del, updateBinaryies, getPreviewUrl } from './lib/api.js'
+import { pull, sync, update, rm, getPreviewUrl, mkdir } from './lib/api.js'
 import { WebSocketServer } from 'ws'
 import chokidar from 'chokidar'
 import fsp from 'fs/promises'
@@ -34,18 +34,23 @@ program
       
       const watcher = chokidar.watch(config.themeDir, {cwd: config.themeDir, ignoreInitial: true})
       watcher.on('all', async (type, path, status) => {
+        console.log(type, path, status?.isDirectory())
         switch(type){
           case 'add':
           case 'change':
-            if(['html', 'liquid', 'svg', 'js', 'json', 'css',].includes(parse(path).ext)){
-              await update(path, await fsp.readFile(resolve(config.themeDir, path), 'utf8'))
-            } else {
-              await updateBinaryies(config.themeDir, [resolve(config.themeDir, path)])
-            }
+            await update(path, await fsp.readFile(resolve(config.themeDir, path)))
             console.log(`${type} ${path}`)
             break
           case 'unlink':
-            await del(path)
+            await rm(path)
+            console.log(`delete ${path}`)
+            break
+          case 'addDir':
+            await mkdir(path)
+            console.log(`add ${path}`)
+            break
+          case 'unlinkDir':
+            await rm(`${path}/`)
             console.log(`delete ${path}`)
             break
         }
@@ -68,7 +73,7 @@ program
   .argument('[path...]', 'Path...')
   .action(async (path) => {
     for(const p of path){
-      await del(p)
+      await rm(p)
     }
   })
 
