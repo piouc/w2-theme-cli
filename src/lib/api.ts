@@ -6,28 +6,31 @@ import tmp from 'tmp'
 import extract from 'extract-zip'
 import archiver from 'archiver'
 import FormData from 'form-data'
-import { parse } from 'path'
+import { parse, relative } from 'path'
+import { minimatch } from 'minimatch'
 
 type FileOption = {
   isDirectory?: boolean
 }
+
+const targetPatterns = [
+  'Contents/images/**/*',
+  'Css/**/*',
+  'Form/**/*',
+  'Js/**/*',
+  'Page/**/*',
+  'Default.aspx',
+  'DefaultBrandTop.aspx'
+]
 
 export const sync = async (rootPath: string) => {
   await client({
     url: '/_w2cmsManager/ContentsManager/ContentsManager'
   })
   const archive = archiver('zip')
-  const files = [
-    'Contents/images',
-    'Css',
-    'Form',
-    'Js',
-    'Page',
-    'Default.aspx',
-    'DefaultBrandTop.aspx'
-  ]
   archive.glob('**/*', {
     cwd: rootPath,
+    pattern: targetPatterns,
     ignore: ['**/TwPelicanAllCvs.xml'],
     skip: ['Landing', 'SmartPhone/Landing', 'LandingPage', 'LP']
   })
@@ -38,8 +41,9 @@ export const sync = async (rootPath: string) => {
   formData.append('Input.UploadContents', archive, `theme.zip`)
 
   archive.finalize()
+  
 
-  const res = await client({
+  await client({
     method: 'post',
     url: `/_w2cmsManager/ContentsManager/Upload?Length=15`,
     data: formData
@@ -61,12 +65,26 @@ export const pull = async (rootPath: string) => {
     responseType: 'stream'
   })
 
-  tmp.file(async (err, name, fd, cleanup) => {
-    await waitClose(res.data.pipe(fs.createWriteStream(name)))
-    await extract(name, {dir: rootPath})
-    cleanup()
+  tmp.file(async (err, tmpFile, fd, tmpFileCleanup) => {
+    tmp.dir(async (err, tmpDir, tmpDirCleanup) => {
+      await waitClose(res.data.pipe(fs.createWriteStream(tmpFile)))
+      await extract(tmpFile, {dir: tmpDir})
+      await fsp.mkdir(rootPath, {recursive: true})
+      await fsp.cp(tmpDir, rootPath, {
+        recursive: true,
+        filter: (src, dest) => {
+          if(src === tmpDir) return true
+          const path = relative(tmpDir, src)
+          return targetPatterns.some(pattern => {
+            return minimatch(path, pattern, {partial: true, matchBase: true})
+          })
+        }
+      })
+      tmpFileCleanup()
+      tmpDirCleanup()
+      console.log('complete')
+    })
 
-    console.log('complete')
   })
 }
 
@@ -86,7 +104,6 @@ export const update = async (path: string, data: Buffer) => {
       'X-Requested-With': 'XMLHttpRequest'
     })
   })
-  console.log(dir.replace(/^\//, '').replace('/', '\\'))
   const formData = new FormData()
   formData.append('Input.ZipDecompress', 'false')
   formData.append('Input.AutoResize', 'false')
@@ -118,7 +135,7 @@ export const rm = async (path: string) => {
   await client({
     method: 'post',
     url: '/_w2cmsManager/ContentsManager/Delete',
-  }).then(res => console.log(res.data))
+  })
 }
 
 export const mkdir = async (path: string) => {
@@ -141,7 +158,7 @@ export const mkdir = async (path: string) => {
   await client({
     method: 'post',
     url: '/_w2cmsManager/ContentsManager/MakeDirectory',
-  }).then(res => console.log(res.data))
+  })
 
   await client({
     method: 'post',
@@ -161,7 +178,7 @@ export const mkdir = async (path: string) => {
     data: querystring.encode({
       rename: newDir ?? parent
     })
-  }).then(res => console.log(res.data))
+  })
 }
 
 export const getPreviewUrl = async () => {
