@@ -10,17 +10,6 @@ export const auth = async (client: AxiosInstance) => {
 const signIn = async (client: AxiosInstance) => {
   try {
     await client({
-      url: '/_w2cmsManager/'
-    })
-    await client({
-      method: 'post',
-      url: '/_w2cmsManager/Login/Login',
-      data: {
-        loginId: config.baseUrl,
-        password: config.password
-      }
-    })
-    await client({
       method: 'post',
       url: '/_w2cmsManager/',
       data: querystring.encode({

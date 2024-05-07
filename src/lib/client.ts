@@ -3,6 +3,7 @@ import { config } from './load-config.js';
 import { auth } from './auth.js';
 import { CookieJar } from 'tough-cookie';
 import { wrapper } from 'axios-cookiejar-support';
+import axiosRetry from 'axios-retry'
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
@@ -17,14 +18,13 @@ export const client = axios.create({
   jar
 })
 
-client.interceptors.response.use(res => {
-  // console.log(res.request._header)
-  // console.log(res.headers)
-  // console.log(res.status)
-  return res
-}, err => {
-  console.error(err)
-})
-
 wrapper(client)
+axiosRetry(client, {
+  onRetry: async (count, err, requestConfig) => {
+    if(err instanceof AxiosError){
+      err.status === 401
+      await auth(client)
+    }
+  }
+})
 await auth(client)
