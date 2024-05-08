@@ -22,8 +22,9 @@ wrapper(client)
 axiosRetry(client, {
   onRetry: async (count, err, requestConfig) => {
     if(err instanceof AxiosError){
-      err.status === 401
-      await auth(client)
+      if(err.status === 401){
+        await auth(client)
+      }
     }
   }
 })
