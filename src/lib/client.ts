@@ -15,17 +15,17 @@ export const client = axios.create({
     username: config.basicAuthUsername,
     password: config.basicAuthPassword
   },
-  jar
+  jar,
+  maxRedirects: 0
 })
 
 wrapper(client)
 axiosRetry(client, {
+  retryCondition: (err) => {
+    return err.status === 401
+  },
   onRetry: async (count, err, requestConfig) => {
-    if(err instanceof AxiosError){
-      if(err.status === 401){
-        await auth(client)
-      }
-    }
+    await auth(client)
   }
 })
 await auth(client)
