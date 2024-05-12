@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 import { Command } from '@commander-js/extra-typings'
-import { pull, sync, update, rm, getPreviewUrl, mkdir } from './lib/api.js'
+import { pull, sync, update, rm, mkdir } from './lib/api.js'
 import { WebSocketServer } from 'ws'
 import chokidar from 'chokidar'
 import fsp from 'fs/promises'
@@ -64,8 +64,7 @@ program
 program
   .command('preview')
   .action(async () => {
-    const url = await getPreviewUrl()
-    // await open(url)
+    await open(config.baseUrl)
   })
 
 program
