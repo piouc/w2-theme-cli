@@ -22,7 +22,6 @@ export const client = axios.create({
 wrapper(client)
 axiosRetry(client, {
   retryCondition: (err) => {
-    console.log('retry', (err.status === 302 && /^\/_w2cmsManager\/\?LoginExpiredFlg/.test(err.response?.headers['Location'])) || err.status === 401)
     return (err.status === 301 && /^\/_w2cmsManager\/\?LoginExpiredFlg/.test(err.response?.headers['Location'])) || err.status === 401
   },
   onRetry: async (count, err, requestConfig) => {
