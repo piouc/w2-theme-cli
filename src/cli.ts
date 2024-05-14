@@ -8,6 +8,8 @@ import fsp from 'fs/promises'
 import { parse, resolve } from 'path'
 import { config } from './lib/load-config.js'
 import open from 'open'
+import pLimit from 'p-limit'
+import { AxiosError } from 'axios'
 
 const program = new Command()
 program
@@ -31,10 +33,12 @@ program
       wss.on('connection', (ws, req) => {
         console.log(`connected ${req.socket.remoteAddress}`)
       })
+
+      const limit = pLimit(1)
       
       const watcher = chokidar.watch(config.themeDir, {cwd: config.themeDir, ignoreInitial: true})
-      watcher.on('all', async (type, path, status) => {
-        console.log(type, path, status?.isDirectory())
+      watcher.on('all', (type, path, status) => limit(async () => {
+        console.log(type, path)
         switch(type){
           case 'add':
           case 'change':
@@ -57,14 +61,27 @@ program
         wss.clients.forEach(ws => {
           ws.send(JSON.stringify({type: 'update'}))
         })
-      })
+      }))
     }
   })
 
 program
   .command('preview')
   .action(async () => {
-    await open(config.baseUrl)
+    const url = new URL(config.baseUrl)
+    url.username = config.basicAuthUsername
+    url.password = config.basicAuthPassword
+    await open(url.href)
+  })
+
+program
+  .command('dashboard')
+  .action(async () => {
+    const url = new URL(config.baseUrl)
+    url.username = config.basicAuthUsername
+    url.password = config.basicAuthPassword
+    url.pathname = '/_w2cmsManager/'
+    await open(url.href)
   })
 
 program
@@ -77,3 +94,9 @@ program
   })
 
 program.parse()
+
+process.on('uncaughtException', err => {
+  if(err instanceof AxiosError){
+    console.error(err.toJSON())
+  }
+})

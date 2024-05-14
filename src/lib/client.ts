@@ -7,6 +7,10 @@ import axiosRetry from 'axios-retry'
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
+const isAuthError = (err: AxiosError) => {
+  return err.status === 302 && /^\/_w2cmsManager\/\?LoginExpiredFlg/.test(err.response?.headers['Location']) || err.status === 401
+}
+
 export const jar = new CookieJar()
 
 export const client = axios.create({
@@ -20,12 +24,15 @@ export const client = axios.create({
 })
 
 wrapper(client)
+
 axiosRetry(client, {
   retryCondition: (err) => {
-    return (err.status === 301 && /^\/_w2cmsManager\/\?LoginExpiredFlg/.test(err.response?.headers['Location'])) || err.status === 401
+    return isAuthError(err) || err.code === 'ETIMEDOUT'
   },
   onRetry: async (count, err, requestConfig) => {
-    await auth(client)
+    if(isAuthError(err)){
+      await auth(client)
+    }
   }
 })
 await auth(client)

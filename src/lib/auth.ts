@@ -21,7 +21,7 @@ const signIn = async (client: AxiosInstance) => {
     })
   } catch(err){
     if(err instanceof AxiosError){
-      console.error(err.code)
+      console.error(err.status)
     } else {
       console.error(err)
     }

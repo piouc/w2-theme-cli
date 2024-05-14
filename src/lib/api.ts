@@ -98,7 +98,7 @@ export const update = async (path: string, data: Buffer) => {
     url: '/_w2cmsManager/ContentsManager/Click?Length=15',
     data: querystring.encode({
       openDirPathList: '：',
-      clickPath: `${dir.replace(/^\/|\/$/, '').replace('/', '\\')}\\`,
+      clickPath: dir ? `${dir.replace(/^\/|\/$/, '').replace('/', '\\')}\\` : '',
       clickDir: 'False',
       comeFromShortCut: 'false',
       'X-Requested-With': 'XMLHttpRequest'
