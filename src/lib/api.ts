@@ -18,9 +18,12 @@ const targetPatterns = [
   'Css/**/*',
   'Form/**/*',
   'Js/**/*',
-  'Page/**/*',
+  // 'Page/**/*',
   'Default.aspx',
-  'DefaultBrandTop.aspx'
+  'DefaultBrandTop.aspx',
+  // 'Landing/formlp/formlp.master',
+  // 'Landing/formlp/og01.aspx',
+  // 'Landing/formlp/LpInputForm.ascx',
 ]
 
 export const sync = async (rootPath: string) => {
@@ -31,8 +34,7 @@ export const sync = async (rootPath: string) => {
   archive.glob('**/*', {
     cwd: rootPath,
     pattern: targetPatterns,
-    ignore: ['**/TwPelicanAllCvs.xml'],
-    skip: ['Landing', 'SmartPhone/Landing', 'LandingPage', 'LP']
+    ignore: ['**/TwPelicanAllCvs.xml', '**/UserRegistRegulationMessage.ascx']
   })
   const formData = new FormData()
   formData.append('Input.ZipDecompress', 'true')
