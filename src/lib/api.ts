@@ -21,9 +21,11 @@ const targetPatterns = [
   // 'Page/**/*',
   'Default.aspx',
   'DefaultBrandTop.aspx',
-  // 'Landing/formlp/formlp.master',
-  // 'Landing/formlp/og01.aspx',
-  // 'Landing/formlp/LpInputForm.ascx',
+  'Landing/formlp/formlp.master',
+  'Landing/formlp/og01.aspx',
+  'Landing/formlp/Css/**/*',
+  'Landing/formlp/LpInputForm.ascx',
+  'Landing/LandingCartConfirm.aspx'
 ]
 
 export const sync = async (rootPath: string) => {
