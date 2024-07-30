@@ -18,7 +18,7 @@ const targetPatterns = [
   'Css/**/*',
   'Form/**/*',
   'Js/**/*',
-  // 'Page/**/*',
+  'Page/**/*',
   'Default.aspx',
   'DefaultBrandTop.aspx',
   'Landing/formlp/formlp.master',
